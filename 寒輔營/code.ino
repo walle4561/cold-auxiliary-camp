@@ -10,8 +10,6 @@ SSD1306AsciiWire oled;
 #define MAX_BRIGHTNESS 255
 
 #if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-//Arduino Uno doesn't have enough SRAM to store 50 samples of IR led data and red led data in 32-bit format
-//To solve this problem, 16-bit MSB of the sampled data will be truncated. Samples become 16-bit data.
 uint16_t irBuffer[100]; //infrared LED sensor data
 uint16_t redBuffer[100];  //red LED sensor data
 #else
@@ -19,10 +17,10 @@ uint32_t irBuffer[100]; //infrared LED sensor data
 uint32_t redBuffer[100];  //red LED sensor data
 #endif
 
-int32_t spo2; //SPO2 value
-int8_t validSPO2; //indicator to show if the SPO2 calculation is valid
-int32_t heartRate; //heart rate value
-int8_t validHeartRate; //indicator to show if the heart rate calculation is valid
+int32_t spo2; //SPO2 值
+int8_t validSPO2; //顯示 SPO2 計算是否有效的指示器
+int32_t heartRate; //心率值
+int8_t validHeartRate; //顯示心率計算是否有效的指標
 
 void setup()
 {
@@ -59,28 +57,28 @@ void loop()
     Serial.println(irBuffer[i], DEC);
   }
 
-  //calculate heart rate and SpO2 after first 50 samples (first 4 seconds of samples)
+  //在前 50 個樣本（樣本的前 4 秒）後計算心率和 SpO2
   maxim_heart_rate_and_oxygen_saturation(irBuffer, 100, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
 
-  //Continuously taking samples from MAX30102.  Heart rate and SpO2 are calculated every 1 second
+  //從 MAX30102 連續採樣。 每 1 秒計算一次心率和 SpO2
   while (1)
   {
-    //dumping the first 25 sets of samples in the memory and shift the last 25 sets of samples to the top
+    //將前 25 組樣本轉儲到內存中，並將後 25 組樣本移到頂部
     for (byte i = 25; i < 100; i++)
     {
       redBuffer[i - 25] = redBuffer[i];
       irBuffer[i - 25] = irBuffer[i];
     }
 
-    //take 25 sets of samples before calculating the heart rate.
+    //在計算心率之前取25組樣本
     for (byte i = 75; i < 100; i++)
     {
-      while (particleSensor.available() == false) //do we have new data?
-        particleSensor.check(); //Check the sensor for new data
+      while (particleSensor.available() == false) //檢查是否有新數據
+        particleSensor.check(); //檢查傳感器是否有新數據
 
       redBuffer[i] = particleSensor.getRed();
       irBuffer[i] = particleSensor.getIR();
-      particleSensor.nextSample(); //We're finished with this sample so move to next sample
+      particleSensor.nextSample();
       Serial.print(F("red="));
       Serial.print(redBuffer[i], DEC);
       Serial.print(F(", ir="));
@@ -100,7 +98,7 @@ void loop()
 
     }
 
-    //After gathering 25 new samples recalculate HR and SP02
+    //收集 25 個新樣本後重新計算 HR 和 SP02
     maxim_heart_rate_and_oxygen_saturation(irBuffer, 100, redBuffer, &spo2, &validSPO2, &heartRate, &validHeartRate);
     printToScreen();
   }
@@ -109,6 +107,7 @@ void loop()
 void printToScreen() {
   oled.clear();
   oled.setCursor(0, 0);
+  oled.set2X();
   if (validSPO2 && validHeartRate) {
     oled.print(F("HR: ")); oled.println(heartRate, DEC);
     oled.print(F("SPO2: ")); oled.println(spo2, DEC);
